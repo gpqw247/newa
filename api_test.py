@@ -1690,5 +1690,25 @@ async def health():
 
 if __name__ == "__main__":
     import sys
-    _loop = "uvloop" if sys.platform != "win32" else "asyncio"
-    uvicorn.run("api_test:app", host="0.0.0.0", port=80, workers=1, loop=_loop)
+
+    # Hosting panels (bot-hosting.net / Pterodactyl) inject the port they proxy
+    # to, e.g. "Proxied to your app's port: 25982". Binding to a hard-coded 80
+    # is why the panel reported "No response on port".
+    _port = int(
+        os.environ.get("SERVER_PORT")
+        or os.environ.get("PORT")
+        or os.environ.get("APP_PORT")
+        or 8000
+    )
+
+    _loop = "asyncio"
+    if sys.platform != "win32":
+        try:
+            import uvloop  # noqa: F401
+            _loop = "uvloop"
+        except ImportError:
+            pass
+
+    print(f"🚀 Shopify checker listening on 0.0.0.0:{_port} (loop={_loop})", flush=True)
+    # Pass the app object so the file name never has to match a module name.
+    uvicorn.run(app, host="0.0.0.0", port=_port, workers=1, loop=_loop)
