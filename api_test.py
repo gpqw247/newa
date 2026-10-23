@@ -1691,15 +1691,23 @@ async def health():
 if __name__ == "__main__":
     import sys
 
-    # Hosting panels (bot-hosting.net / Pterodactyl) inject the port they proxy
-    # to, e.g. "Proxied to your app's port: 25982". Binding to a hard-coded 80
-    # is why the panel reported "No response on port".
+    # ── Startup diagnostics ──────────────────────────────────────────────
+    # Panels put the proxied port in different env vars. Printing them makes
+    # "No response on port" obvious in the panel console.
+    _port_env = {k: v for k, v in os.environ.items() if "PORT" in k.upper()}
     _port = int(
         os.environ.get("SERVER_PORT")
         or os.environ.get("PORT")
         or os.environ.get("APP_PORT")
         or 8000
     )
+
+    print("=" * 62, flush=True)
+    print(f"\U0001F4C4 file     : {os.path.abspath(__file__)}", flush=True)
+    print(f"\U0001F4C2 cwd      : {os.getcwd()}", flush=True)
+    print(f"\U0001F50C port env : {_port_env or '(none found)'}", flush=True)
+    print(f"\U0001F50C binding  : 0.0.0.0:{_port}", flush=True)
+    print("=" * 62, flush=True)
 
     _loop = "asyncio"
     if sys.platform != "win32":
@@ -1709,6 +1717,4 @@ if __name__ == "__main__":
         except ImportError:
             pass
 
-    print(f"🚀 Shopify checker listening on 0.0.0.0:{_port} (loop={_loop})", flush=True)
-    # Pass the app object so the file name never has to match a module name.
     uvicorn.run(app, host="0.0.0.0", port=_port, workers=1, loop=_loop)
